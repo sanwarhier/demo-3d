@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Marker im Container platzieren</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      font-family: Arial;
+    }
+
+    #placeMarkerContainer {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      height: 20vh;
+    }
+
+    #placeMarkerBtn {
+      margin: 10px;
+      padding: 10px 20px;
+      padding-left: 30px;
+      /*background-color: #0066cc;*/
+      color: rgb(255, 255, 255);
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background-image: url(cursor.png);
+      background-position: 3% 50%; 
+      background-size: 25px; 
+      background-repeat: no-repeat;
+      background-color: #0066cc;
+    }
+
+    #placeMarkerBtn.active {
+      background-color: #cc0000;
+    }
+
+    #placeMarkerBtn:disabled {
+      background-color: #aaaaaa;
+    }
+
+    #markerContainer {
+      width: 100vw;
+      height: 80vh;
+      background-color: #f0f0f0;
+      /*border: 2px dashed #aaa;*/
+      position: relative;
+    }
+
+    .marker {
+      /*width: 20px;
+      height: 20px;*/
+      /*background-color: red;
+      border-radius: 50%;*/
+      position: absolute;
+      transform: translate(-50%, -80%);
+      pointer-events: none;
+      z-index: 300;
+      width: 50px;
+      height: 50px;
+      background-image: url(cursor.png);
+      background-size: 50px;
+    }
+
+    #pano {
+        height: 100%;
+        width: 100%;
+      }
+
+      #infoOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      /*background-color: rgba(0, 0, 0, 0.5);*/
+      display: none;
+      justify-content: center;
+      align-items: end;
+      z-index: 9999;
+    }
+
+    #infoBox {
+      background-color: white;
+      padding: 10px 20px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    #backBtn {
+      margin-left: 20px;
+      padding: 8px 16px;
+      background-color: crimson;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #search-box {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  background: white;
+  padding: 6px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+#search-box input {
+  width: 300px;
+  padding: 6px 10px;
+  font-size: 16px;
+}
+  </style>
+</head>
+
+<!--------------------- HTML ----------------------------------->
+
+<body>
+
+  <h1>Suche einen guten Ort für eine Stadt-Terrasse.</h1>
+  
+
+  <div id="markerContainer">
+    <div id="search-box">
+      <input id="autocomplete" type="text" placeholder="Adresse suchen...">
+    </div>    
+    <gmp-map-3d mode="hybrid" center="51.51496027592097, 7.175739596880455" range="2000" tilt="75" heading="330"></gmp-map-3d>
+    <script async
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBMAivRQamSwisn7RPp7SMS4UL__cP4NCw&v=beta&libraries=places,maps3d&callback=initAutocomplete">
+    </script>
+    <div id="infoOverlay">
+      <div id="infoBox">
+        <span>✅ Fertig!</span>
+        <button id="backBtn">Zurück</button>
+      </div>
+    </div>
+  </div>
+  <button id="placeMarkerBtn">Hier Markierung malen!</button>
+  <div id="map"></div>
+
+
+
+
+
+<!--------------------- JS ----------------------------------->
+
+
+  <script>
+
+    function blockAllEvents(e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+
+    function enableEventBlocking() {
+      markerContainer.addEventListener('mousedown', blockAllEvents, true);
+      markerContainer.addEventListener('mouseup', blockAllEvents, true);
+      markerContainer.addEventListener('mousemove', blockAllEvents, true);
+      markerContainer.addEventListener('keydown', blockAllEvents, true);
+      markerContainer.addEventListener('keyup', blockAllEvents, true);
+    }
+
+    function disableEventBlocking() {
+      markerContainer.removeEventListener('mousedown', blockAllEvents, true);
+      markerContainer.removeEventListener('mouseup', blockAllEvents, true);
+      markerContainer.removeEventListener('mousemove', blockAllEvents, true);
+      markerContainer.removeEventListener('keydown', blockAllEvents, true);
+      markerContainer.removeEventListener('keyup', blockAllEvents, true);
+    }
+
+    const placeMarkerBtn = document.getElementById('placeMarkerBtn');
+    const markerContainer = document.getElementById('markerContainer');
+    const infoOverlay = document.getElementById('infoOverlay');
+    const backBtn = document.getElementById('backBtn');
+
+    let placingMarker = false;
+
+    placeMarkerBtn.addEventListener('click', () => {
+      placingMarker = true;
+      placeMarkerBtn.classList.add('active');
+      placeMarkerBtn.textContent = "Klicke ins Bild...";
+      placeMarkerBtn.disabled = true;
+      enableEventBlocking();
+    });
+
+    markerContainer.addEventListener('click', (e) => {
+      if (!placingMarker) return;
+
+      e.stopPropagation();
+      e.preventDefault();
+
+      const rect = markerContainer.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const marker = document.createElement('div');
+      marker.className = 'marker';
+      marker.style.left = `${x}px`;
+      marker.style.top = `${y}px`;
+
+      markerContainer.appendChild(marker);
+
+      // Modus deaktivieren
+      placingMarker = false;
+      placeMarkerBtn.classList.remove('active');
+      placeMarkerBtn.textContent = "Hier Markierung malen!";
+
+      infoOverlay.style.display = 'flex';
+
+      disableEventBlocking();
+    });
+
+    backBtn.addEventListener('click', () => {
+      infoOverlay.style.display = 'none';
+      document.getElementsByClassName("marker")[0].remove();
+      placeMarkerBtn.disabled = false;
+    });
+
+    // Adresssuche aktivieren
+  function initAutocomplete() {
+    const input = document.getElementById("autocomplete");
+    const autocomplete = new google.maps.places.Autocomplete(input);
+
+    autocomplete.addListener("place_changed", () => {
+      const place = autocomplete.getPlace();
+      if (!place.geometry || !place.geometry.location) {
+        alert("Adresse nicht gefunden");
+        return;
+      }
+
+      const coords = place.geometry.location;
+      const map3d = document.querySelector("gmp-map-3d");
+      
+      map3d.setAttribute("center", `${coords.lat()},${coords.lng()}`);
+    });
+  }
+
+  // Init aufrufen, wenn die API geladen ist
+  window.initAutocomplete = initAutocomplete;
+
+  </script>
+
+</body>
+</html>
