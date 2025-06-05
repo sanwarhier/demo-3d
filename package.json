@@ -1,0 +1,11 @@
+{
+  "name": "gh-pages-api-build",
+  "version": "1.0.0",
+  "description": "HTML-Build mit API-Key-Einbettung über GitHub Actions",
+  "main": "scripts/build.js",
+  "scripts": {
+    "build": "node scripts/build.js"
+  },
+  "author": "",
+  "license": "MIT"
+}
